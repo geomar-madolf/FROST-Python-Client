@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import requests
+from requests.adapters import HTTPAdapter, Retry
+
 from furl import furl
 import logging
 
@@ -24,11 +26,20 @@ from frost_sta_client.model.ext import entity_type
 
 
 class SensorThingsService:
-
     def __init__(self, url, auth_handler=None, proxies=None):
         self.url = url
         self.auth_handler = auth_handler
         self.proxies = proxies
+
+        self.request_session = requests.Session()
+
+        retries = Retry(
+            total=5, backoff_factor=0.1, status_forcelist=[500, 502, 503, 504]
+        )
+
+        adapter = HTTPAdapter(max_retries=retries)
+        self.request_session.mount("http://", adapter)
+        self.request_session.mount("https://", adapter)
 
     @property
     def url(self):
@@ -45,7 +56,6 @@ class SensorThingsService:
             logging.error("received invalid url")
             raise e
 
-
     @property
     def auth_handler(self):
         return self._auth_handler
@@ -56,10 +66,9 @@ class SensorThingsService:
             self._auth_handler = None
             return
         if not isinstance(value, auth_handler.AuthHandler):
-            raise ValueError('auth should be of type AuthHandler!')
+            raise ValueError("auth should be of type AuthHandler!")
         self._auth_handler = value
 
-    
     @property
     def proxies(self):
         return self._proxies
@@ -70,15 +79,22 @@ class SensorThingsService:
             self._proxies = None
             return
         elif not isinstance(value, dict):
-            raise ValueError('Proxies must be a Dictionary!')
+            raise ValueError("Proxies must be a Dictionary!")
         self._proxies = value
-    
-    
+
     def execute(self, method, url, **kwargs):
         if self.auth_handler is not None:
-            response = requests.request(method, url, proxies=self.proxies, auth=self.auth_handler.add_auth_header(), **kwargs)
+            response = self.request_session.request(
+                method,
+                url,
+                proxies=self.proxies,
+                auth=self.auth_handler.add_auth_header(),
+                **kwargs
+            )
         else:
-            response = requests.request(method, url, proxies=self.proxies, **kwargs)
+            response = self.request_session.request(
+                method, url, proxies=self.proxies, **kwargs
+            )
         try:
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
@@ -90,10 +106,12 @@ class SensorThingsService:
         if parent is None:
             return relation
         this_entity_type = entity_type.get_list_for_class(type(parent))
-        return "{entity_type}({id})/{relation}".format(entity_type=this_entity_type, id=parent.id, relation=relation)
+        return "{entity_type}({id})/{relation}".format(
+            entity_type=this_entity_type, id=parent.id, relation=relation
+        )
 
     def get_full_path(self, parent, relation):
-        slash = "" if self.url.pathstr[-1] == '/' else "/"
+        slash = "" if self.url.pathstr[-1] == "/" else "/"
         url = self.url.url + slash + self.get_path(parent, relation)
         return furl(url)
 
