@@ -34,7 +34,7 @@ class SensorThingsService:
         self.request_session = requests.Session()
 
         retries = Retry(
-            total=5, backoff_factor=0.1, status_forcelist=[500, 502, 503, 504]
+            total=20,connect=15, backoff_factor=0.3, status_forcelist=[500, 502, 503, 504]
         )
 
         adapter = HTTPAdapter(max_retries=retries)
