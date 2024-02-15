@@ -33,14 +33,17 @@ class SensorThingsService:
         self.auth_handler = auth_handler
         self.proxies = proxies
         config = Config()
-
+        total_retries = config.total_retries
+        connect =  config.connect
+        backoff_factor = config.backoff_factor
+        status_forcelist = config.status_forcelist
         self.request_session = requests.Session()
 
         retries = Retry(
-            total=20,
-            connect=15,
-            backoff_factor=0.3,
-            status_forcelist=[500, 502, 503, 504],
+            total=total_retries,
+            connect=connect,
+            backoff_factor=backoff_factor,
+            status_forcelist=status_forcelist,
         )
 
         adapter = HTTPAdapter(max_retries=retries)
