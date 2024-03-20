@@ -20,6 +20,8 @@ from requests.adapters import HTTPAdapter, Retry
 from furl import furl
 import logging
 
+from frost_sta_client.config import Config
+
 from frost_sta_client.dao import *
 from frost_sta_client.service import auth_handler
 from frost_sta_client.model.ext import entity_type
@@ -30,16 +32,29 @@ class SensorThingsService:
         self.url = url
         self.auth_handler = auth_handler
         self.proxies = proxies
-
+        config = Config()
+        total_retries = config.total_retries
+        connect =  config.connect
+        backoff_factor = config.backoff_factor
+        status_forcelist = config.status_forcelist
         self.request_session = requests.Session()
 
         retries = Retry(
-            total=20,connect=15, backoff_factor=0.3, status_forcelist=[500, 502, 503, 504]
+            total=total_retries,
+            connect=connect,
+            backoff_factor=backoff_factor,
+            status_forcelist=status_forcelist,
         )
 
         adapter = HTTPAdapter(max_retries=retries)
         self.request_session.mount("http://", adapter)
         self.request_session.mount("https://", adapter)
+
+        if config.HTTP_AUTH:
+            user = config.HTTP_AUTH_USER
+            password = config.HTTP_AUTH_PASSWORD
+            if user and password:
+                self.request_session.auth = (user, password)
 
     @property
     def url(self):
@@ -89,7 +104,7 @@ class SensorThingsService:
                 url,
                 proxies=self.proxies,
                 auth=self.auth_handler.add_auth_header(),
-                **kwargs
+                **kwargs,
             )
         else:
             response = self.request_session.request(
@@ -107,7 +122,9 @@ class SensorThingsService:
             return relation
         this_entity_type = entity_type.get_list_for_class(type(parent))
         _id = f"'{parent.id}'" if isinstance(parent.id, str) else parent.id
-        return "{entity_type}({id})/{relation}".format(entity_type=this_entity_type, id=_id, relation=relation)
+        return "{entity_type}({id})/{relation}".format(
+            entity_type=this_entity_type, id=_id, relation=relation
+        )
 
     def get_full_path(self, parent, relation):
         slash = "" if self.url.pathstr[-1] == "/" else "/"
