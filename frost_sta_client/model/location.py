@@ -168,6 +168,7 @@ class Location(entity.Entity):
         if isinstance(values, entity_list.EntityList) and \
                 all(isinstance(hl, historical_location.HistoricalLocation) for hl in values.entities):
             self._historical_locations = values
+            return
         raise ValueError('historical_location should be of type HistoricalLocation!')
 
     def get_things(self):
@@ -217,9 +218,9 @@ class Location(entity.Entity):
         if self.location is not None:
             data['location'] = self.location
         if self.things is not None:
-            data['Things'] = self.things
+            data['Things'] = self.things.__getstate__()
         if self.historical_locations is not None and len(self.historical_locations.entities) > 0:
-            data['HistoricalLocation'] = self.historical_locations.__getstate__()
+            data['HistoricalLocations'] = self.historical_locations.__getstate__()
         return data
 
     def __setstate__(self, state):

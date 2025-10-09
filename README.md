@@ -19,7 +19,8 @@ The source code below demonstrates the CRUD operations for Thing objects. Operat
 import frost_sta_client as fsc
 
 url = "exampleserver.com/FROST-Server/v1.1"
-service = fsc.SensorThingsService(url)
+auth_handler = fsc.AuthHandler(username="admin", password="admin") # if server is configured for basic auth, else None
+service = fsc.SensorThingsService(url, auth_handler=auth_handler)
 ```
 #### Creating Entities
 ```python
@@ -75,6 +76,7 @@ observations_list = datastream.get_observations().query().filter("result gt 10")
 ```
 
 ### Callback function in `EntityList`
+
 The progress of the loading process can be tracked by supplying a callback function along with a step size. The callback
 function and the step size must both be provided to the `list` function (see example below).
 
