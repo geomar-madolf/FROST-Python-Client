@@ -30,6 +30,7 @@ test_package:
     - python -V
     - pip install -r requirements.txt  
     - python -m unittest discover -s tests  
+    
   dependencies:
     - build_wheel
   artifacts:
@@ -40,7 +41,9 @@ upload_package:
   stage: release
   script:
     - pip install twine
-    - twine upload --verbose --repository-url $TWINE_REPO_URL 
+    - twine upload --verbose --repository-url $TWINE_REPO_URL dist/*
+  dependencies:
+    - build_wheel
   only:
     - main
     - tags
