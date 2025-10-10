@@ -29,14 +29,16 @@ test_package:
   script:
     - python -V
     - pip install -r requirements.txt  
-    - python -m unittest discover -s tests  
-    
+    - pip install pytest pytest-cov
+    - pytest --maxfail=1 --disable-warnings -q --junitxml=tests/test_results.xml
   dependencies:
     - build_wheel
   artifacts:
+    when: always
+    reports:
+      junit: tests/test_results.xml
     paths:
       - tests/test_results.xml
-
 upload_package:
   stage: release
   script:
