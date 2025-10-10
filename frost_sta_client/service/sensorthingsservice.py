@@ -99,16 +99,17 @@ class SensorThingsService:
 
     def execute(self, method, url, **kwargs):
         if self.auth_handler is not None:
+            #use normales requests if separate auth_handler is set
             response = self.request_session.request(
-                method,
-                url,
+                method=method,
+                url=url,
                 proxies=self.proxies,
                 auth=self.auth_handler.add_auth_header(),
                 **kwargs,
             )
         else:
             response = self.request_session.request(
-                method, url, proxies=self.proxies, **kwargs
+                method=method, url=url, proxies=self.proxies, **kwargs
             )
         try:
             response.raise_for_status()

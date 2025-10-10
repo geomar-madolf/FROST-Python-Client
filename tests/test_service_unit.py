@@ -43,7 +43,7 @@ def test_execute_uses_auth(monkeypatch):
     svc.auth_handler = AuthHandler('user', 'pass')
     captured = {}
 
-    def fake_request(method, url, proxies=None, auth=None, **kwargs):
+    def fake_request(self,method, url, proxies=None, auth=None, **kwargs):
         captured['auth'] = auth
         class R:
             status_code = 200
@@ -53,6 +53,6 @@ def test_execute_uses_auth(monkeypatch):
                 return {}
         return R()
 
-    monkeypatch.setattr(requests, 'request', fake_request)
+    monkeypatch.setattr(requests.Session, 'request', fake_request)
     svc.execute('get', 'http://example.org')
     assert isinstance(captured['auth'], HTTPBasicAuth)
