@@ -5,19 +5,46 @@ variables:
   TWINE_REPO_URL: https://git.geomar.de/api/v4/projects/${CI_PROJECT_ID}/packages/pypi
 
 stages:
+  - build
+  - test
   - release
 
-
 build_wheel:
-  stage: release
+  stage: build
   image: python:3.10
   script:
     - python -V
     - pip install virtualenv
     - virtualenv venv
     - source venv/bin/activate
-    - pip install twine
-    - python setup.py bdist_wheel
-    - python -m twine upload --repository-url $TWINE_REPO_URL dist/* --verbose
-  allow_failure: false # uploading same version results in failure.
+    - pip install build
+    - python -m build
+  artifacts:
+    paths:
+      - dist/*.whl
 
+test_package:
+  stage: test
+  image: python:3.10
+  script:
+    - python -V
+    - pip install -r requirements.txt  
+    - python -m unittest discover -s tests  
+    
+  dependencies:
+    - build_wheel
+  artifacts:
+    paths:
+      - tests/test_results.xml
+
+upload_package:
+  stage: release
+  script:
+    - pip install twine
+    - twine upload --verbose --repository-url $TWINE_REPO_URL dist/*
+  dependencies:
+    - build_wheel
+  only:
+    - main
+    - tags
+  allow_failure: false # uploading same version results in failure.
