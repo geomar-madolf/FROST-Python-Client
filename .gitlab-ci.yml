@@ -7,6 +7,8 @@ variables:
 stages:
   - build
   - test
+  - build
+  - test
   - release
 
 build_wheel:
@@ -43,6 +45,12 @@ upload_package:
   stage: release
   script:
     - pip install twine
+    - twine upload --verbose --repository-url $TWINE_REPO_URL dist/*
+  dependencies:
+    - build_wheel
+  only:
+    - main
+    - tags
     - twine upload --verbose --repository-url $TWINE_REPO_URL dist/*
   dependencies:
     - build_wheel
