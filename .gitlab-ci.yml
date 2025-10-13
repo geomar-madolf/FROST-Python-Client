@@ -32,7 +32,7 @@ test_package:
     - python -V
     - pip install -r requirements.txt  
     - pip install pytest pytest-cov
-    - pytest --maxfail=1 --disable-warnings -q --junitxml=tests/test_results.xml
+    - python -m pytest --maxfail=1 --disable-warnings -q --junitxml=tests/test_results.xml
   dependencies:
     - build_wheel
   artifacts:
