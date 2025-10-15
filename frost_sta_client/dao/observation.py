@@ -42,15 +42,11 @@ class ObservationDao(base.BaseDao):
             url = self.service.url.copy()
             url.path.add(self.CREATE_OBSERVATIONS)
             logging.debug('Posting to ' + str(url.url))
-            json_dict = transform_entity_to_json_dict(entity.value)
+            json_dict = [transform_entity_to_json_dict(dav) for dav in entity.value]
             try:
                 response = self.service.execute('post', url, json=json_dict)
             except requests.exceptions.HTTPError as e:
-                error_json = e.response.json()
-                error_message = error_json['message']
-                logging.error("Creating {} failed with status-code {}, {}".format("Data Array",
-                                                                              e.response.status_code,
-                                                                              error_message))
+                frost_sta_client.utils.handle_server_error(e, 'Creating Data Array')
             response_text_as_list = json.loads(response.text)
             result = [frost_sta_client.model.observation.Observation(self_link=link) for link in response_text_as_list]
             return result
