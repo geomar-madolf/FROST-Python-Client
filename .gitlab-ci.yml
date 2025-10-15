@@ -42,6 +42,7 @@ test_package:
       junit: tests/test_results.xml
     paths:
       - tests/test_results.xml
+      
 upload_package:
   stage: release
 
@@ -50,10 +51,6 @@ upload_package:
     - twine upload --verbose --repository-url $TWINE_REPO_URL dist/*
   dependencies:
     - build_wheel
-  only:
-    - main
-    - tags
-    - twine upload --verbose --repository-url $TWINE_REPO_URL dist/*
   dependencies:
     - build_wheel
   only:
