@@ -49,5 +49,6 @@ upload_package:
   dependencies:
     - build_wheel
   only:
+    - main
     - tags
   allow_failure: false # uploading same version results in failure.
