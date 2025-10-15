@@ -231,17 +231,9 @@ class Thing(entity.Entity):
             return False
         if self.description != other.description:
             return False
-        if not self._important_properties_are_equal(self.properties, other.properties):
+        if self.properties != other.properties:
             return False
         return True
-
-    def _important_properties_are_equal(self, prop1, prop2):
-        #fields are variable properties, that should not be compared
-        if prop1 is None or prop2 is None:
-            return prop1 == prop2
-        filtered_prop1 = {k: v for k, v in prop1.items() if k != "fields"}
-        filtered_prop2 = {k: v for k, v in prop2.items() if k != "fields"}
-        return filtered_prop1 == filtered_prop2
 
     def __ne__(self, other):
         return not self == other
