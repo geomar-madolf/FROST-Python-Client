@@ -16,13 +16,18 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python 3.8
+    - name: Set up Python 3.12
       uses: actions/setup-python@v2
       with:
-        python-version: "3.8"
+        python-version: "3.12"
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
+        echo '#!/usr/bin/env bash' | sudo tee /usr/local/bin/podman >/dev/null
+        echo 'exec docker "$@"' | sudo tee -a /usr/local/bin/podman >/dev/null
+        sudo chmod +x /usr/local/bin/podman
+        docker info
+        docker compose version
+        python3 -m pip install --upgrade pip
         pip install flake8 pytest
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Lint with flake8
@@ -33,4 +38,5 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
+        export FROST_STA_CLIENT_RUN_INTEGRATION=1
         python -m pytest
