@@ -15,46 +15,22 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import requests
-from requests.adapters import HTTPAdapter, Retry
 
 from furl import furl
 import logging
 
-from frost_sta_client.config import Config
-
 from frost_sta_client.dao import *
 from frost_sta_client.service import auth_handler
+from frost_sta_client.service import session_handler
 from frost_sta_client.model.ext import entity_type
 
 
 class SensorThingsService:
-    def __init__(self, url, auth_handler=None, proxies=None):
+    def __init__(self, url, auth_handler=None, session_handler=None, proxies=None):
         self.url = url
+        self.session_handler = session_handler
         self.auth_handler = auth_handler
         self.proxies = proxies
-        config = Config()
-        total_retries = config.total_retries
-        connect =  config.connect
-        backoff_factor = config.backoff_factor
-        status_forcelist = config.status_forcelist
-        self.request_session = requests.Session()
-
-        retries = Retry(
-            total=total_retries,
-            connect=connect,
-            backoff_factor=backoff_factor,
-            status_forcelist=status_forcelist,
-        )
-
-        adapter = HTTPAdapter(max_retries=retries)
-        self.request_session.mount("http://", adapter)
-        self.request_session.mount("https://", adapter)
-
-        if config.HTTP_AUTH:
-            user = config.HTTP_AUTH_USER
-            password = config.HTTP_AUTH_PASSWORD
-            if user and password:
-                self.request_session.auth = (user, password)
 
     @property
     def url(self):
@@ -82,7 +58,26 @@ class SensorThingsService:
             return
         if not isinstance(value, auth_handler.AuthHandler):
             raise ValueError("auth should be of type AuthHandler!")
+
         self._auth_handler = value
+        if self.session_handler is not None:
+            self.session_handler.set_auth(value.add_auth_header())
+
+    @property
+    def session_handler(self):
+        return self._session_handler
+
+    @session_handler.setter
+    def session_handler(self, value):
+        if value is None:
+            self._session_handler = None
+            return
+        if not isinstance(value, session_handler.SessionHandler):
+            raise ValueError("session should be of type SessionHandler!")
+        self._session_handler = value
+
+        if self.auth_handler is not None:
+            self.session_handler.set_auth(self.auth_handler.add_auth_header())
 
     @property
     def proxies(self):
@@ -98,9 +93,14 @@ class SensorThingsService:
         self._proxies = value
 
     def execute(self, method, url, **kwargs):
-        if self.auth_handler is not None:
-            #use normales requests if separate auth_handler is set
-            response = self.request_session.request(
+
+        if self.session_handler is not None:
+            request_session = self.session_handler.get_session()
+            response = request_session.request(
+                method=method, url=url, proxies=self.proxies, **kwargs
+            )
+        elif self.auth_handler is not None:
+            response = requests.request(
                 method=method,
                 url=url,
                 proxies=self.proxies,
@@ -108,7 +108,7 @@ class SensorThingsService:
                 **kwargs,
             )
         else:
-            response = self.request_session.request(
+            response = requests.request(
                 method=method, url=url, proxies=self.proxies, **kwargs
             )
         try:
