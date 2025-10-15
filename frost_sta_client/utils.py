@@ -31,8 +31,11 @@ def extract_value(location):
     return value
 
 def transform_entity_to_json_dict(entity):
-    json_str = jsonpickle.encode(entity, unpicklable=False)
-    return jsonpickle.decode(json_str)
+    try:
+        data = entity.__getstate__()
+    except AttributeError:
+        data = entity.__dict__
+    return data
 
 def class_from_string(string):
     module_name, class_name = string.rsplit(".", 1)
@@ -117,3 +120,19 @@ def process_area(value):
     if value["type"] == "LineString":
         return geojson.geometry.LineString(value["coordinates"])
     raise ValueError("can only handle geojson of type Point, Polygon, Geometry or LineString")
+
+def handle_server_error(error, failed_action):
+    # Try to extract a meaningful error message even if the response is not JSON
+    try:
+        err = error.response.json()
+        if isinstance(err, dict):
+            error_message = err.get('message', err.get('error', str(err)))
+        else:
+            error_message = str(err)
+    except Exception:
+        try:
+            error_message = getattr(error.response, 'text', str(error))
+        except Exception:
+            error_message = str(error)
+    logging.error("{} failed with status-code {}, {}".format(failed_action, getattr(error.response, 'status_code', 'unknown'), error_message))
+    raise error

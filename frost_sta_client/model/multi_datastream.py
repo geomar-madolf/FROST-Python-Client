@@ -260,7 +260,7 @@ class MultiDatastream(entity.Entity):
             return False
         if self.observation_type != other.observation_type:
             return False
-        if self.observed_area != other.observation_area:
+        if self.observed_area != other.observed_area:
             return False
         if self.properties != other.properties:
             return False
@@ -290,13 +290,13 @@ class MultiDatastream(entity.Entity):
         if self.result_time is not None:
             data['resultTime'] = utils.parse_datetime(self.result_time)
         if self.thing is not None:
-            data['Thing'] = self.thing
+            data['Thing'] = self.thing.__getstate__()
         if self.sensor is not None:
-            data['Sensor'] = self.sensor
+            data['Sensor'] = self.sensor.__getstate__()
         if self.properties is not None and self.properties != {}:
             data['properties'] = self.properties
         if self.unit_of_measurements is not None and len(self.unit_of_measurements) > 0:
-            data['unitOfMeasurements'] = self.unit_of_measurements
+            data['unitOfMeasurements'] = self.unit_of_measurements.__getstate__()
         if self.multi_observation_data_types is not None and len(self.multi_observation_data_types) > 0:
             data['multiObservationDataTypes'] = self.multi_observation_data_types
         if self.observed_properties is not None and len(self.observed_properties.entities) > 0:
@@ -310,7 +310,8 @@ class MultiDatastream(entity.Entity):
         self.name = state.get('name', None)
         self.description = state.get('description', None)
         self.observation_type = state.get('observationType', None)
-        self.observation_area = state.get('observedArea', None)
+        if state.get('observedArea', None) is not None:
+            self.observed_area = frost_sta_client.utils.process_area(state['observedArea'])
         self.phenomenon_time = state.get('phenomenonTime', None)
         self.result_time = state.get('resultTime', None)
         self.properties = state.get('properties', None)
@@ -338,8 +339,8 @@ class MultiDatastream(entity.Entity):
         if state.get('Observations', None) is not None and isinstance(state['Observations'], list):
             entity_class = entity_type.EntityTypes['Observation']['class']
             self.observations = utils.transform_json_to_entity_list(state['Observations'], entity_class)
-            self.observed_properties.next_link = state.get('Observations@iot.nextLink')
-            self.observed_properties.count = state.get('Observations@iot.count')
+            self.observations.next_link = state.get('Observations@iot.nextLink')
+            self.observations.count = state.get('Observations@iot.count')
 
     def get_dao(self, service):
         return MultiDatastreamDao(service)
