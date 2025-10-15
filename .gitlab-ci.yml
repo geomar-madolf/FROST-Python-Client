@@ -4,6 +4,9 @@ variables:
   TWINE_USERNAME: gitlab-ci-token
   TWINE_REPO_URL: https://git.geomar.de/api/v4/projects/${CI_PROJECT_ID}/packages/pypi
 
+
+image: python:3.14
+
 stages:
   - build
   - test
@@ -13,7 +16,6 @@ stages:
 
 build_wheel:
   stage: build
-  image: python:3.10
   script:
     - python -V
     - pip install virtualenv
@@ -27,7 +29,6 @@ build_wheel:
 
 test_package:
   stage: test
-  image: python:3.10
   script:
     - python -V
     - pip install -r requirements.txt  
@@ -43,6 +44,7 @@ test_package:
       - tests/test_results.xml
 upload_package:
   stage: release
+
   script:
     - pip install twine
     - twine upload --verbose --repository-url $TWINE_REPO_URL dist/*
